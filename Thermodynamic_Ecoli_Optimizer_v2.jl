@@ -33,7 +33,7 @@ using Gurobi
 	for j in bad_comp
 	global bad_rxn
 		for k in 1:noreactions
-			if S_matrix[j,k]>0.5
+			if abs(S_matrix[j,k])>0.5
 				bad_rxn=push!(bad_rxn,k)
 			end		
 		end
@@ -47,19 +47,7 @@ using Gurobi
 		S_matrix=hcat(S_matrix[:,1:(l-1)],S_matrix[:,(l+1):b])		
 	end
 
-	bad_rxn_v2=[]
-	for k in [34,40,102,168]
-	global bad_rxn_v2
-		bad_rxn_v2=push!(bad_rxn_v2,k)
-	end
-	#111,53,60,64,67,73,130,141,144,147,161,208,209,220
-	bad_rxn_v2=sort(bad_rxn_v2,rev=true)
 
-	for l in bad_rxn_v2
-	global S_matrix
-		a,b=size(S_matrix)
-		S_matrix=hcat(S_matrix[:,1:(l-1)],S_matrix[:,(l+1):b])		
-	end
 
 	nochemicals,noreactions=size(S_matrix)
 
@@ -87,7 +75,7 @@ using Gurobi
 
 	nochemicals,noreactions=size(S_matrix)
 
-	no=(168.25*50*10^-6)*ones(nochemicals,1)
+	no=(1*50*10^-6)*ones(nochemicals,1)
 	#.+0.0084
 	#no[30]=10
 	#no[288]=111
