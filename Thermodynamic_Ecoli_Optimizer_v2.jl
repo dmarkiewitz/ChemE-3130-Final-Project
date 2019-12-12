@@ -11,6 +11,8 @@ using Gurobi
 	#include("Stoichiometric_array_and_reference_vector_constructor.jl")
 
 	deltaG_list=CSV.read("Thermo_Delta_G_Data.csv")
+	aaa,bbb=size(deltaG_list)
+	deltaG_list=deltaG_list[1:aaa-2,:]
 
 	nochemicals,noreactions=size(S_matrix)
 
@@ -46,11 +48,11 @@ using Gurobi
 	end
 
 	bad_rxn_v2=[]
-	for k in [34,40,53,60,64,67,73,102,111,130,141,144,147,161,168,209,220]
+	for k in [34,40,102,168]
 	global bad_rxn_v2
 		bad_rxn_v2=push!(bad_rxn_v2,k)
 	end
-	
+	#111,53,60,64,67,73,130,141,144,147,161,208,209,220
 	bad_rxn_v2=sort(bad_rxn_v2,rev=true)
 
 	for l in bad_rxn_v2
@@ -64,28 +66,29 @@ using Gurobi
 	updatedchem,misc=size(deltaG_list)
 
 	#adding the zero rows first
-	zrow=zeros(convert(Int,updatedchem-nochemicals),noreactions)
+	#zrow=zeros(convert(Int,updatedchem-nochemicals),noreactions)
 
-	S_matrix=vcat(S_matrix,zrow)
+	#S_matrix=vcat(S_matrix,zrow)
 
 	#The is	adding the reactions required for the diol
-	radd=zeros(updatedchem,1)
-	radd[17]=1
-	radd[28]=-1
-	radd[30]=1
-	radd[287]=-1
-	radd[288]=1	
-	S_matrix=hcat(S_matrix,radd)
+	#radd=zeros(updatedchem,1)
+	#radd[17]=1
+	#radd[28]=-1
+	#radd[30]=1
+	#radd[287]=-1
+	#radd[288]=1	
+	#S_matrix=hcat(S_matrix,radd)
 	
-	radd2=zeros(updatedchem,1)
-	radd2[6]=1
-	radd2[277]=-1
-	radd2[288]=1
-	S_matrix=hcat(S_matrix,radd2)
+	#radd2=zeros(updatedchem,1)
+	#radd2[6]=1
+	#radd2[277]=-1
+	#radd2[288]=1
+	#S_matrix=hcat(S_matrix,radd2)
 
 	nochemicals,noreactions=size(S_matrix)
 
-	no=(0.002)*ones(nochemicals)
+	no=(168.25*50*10^-6)*ones(nochemicals,1)
+	#.+0.0084
 	#no[30]=10
 	#no[288]=111
 	#no[28]=0
@@ -121,7 +124,6 @@ using Gurobi
 			@constraint(EF_Model, no[i] + sum(S_matrix[i,j]*excess[j] for j=1:noreactions) >= 0) #If ni finals are known then can put those in as a constraint
 		end	
 		
-			#@constraint(EF_Model, excess[207]<=-0.01)
 		#Output
 		optimize!(EF_Model)
 
@@ -140,6 +142,11 @@ using Gurobi
 		end
 
 		#delta_G=dot(Transpose(delta_G_not_compound),no)-dot(Transpose(delta_G_not_compound),ne)
-		r=179		
-		K=prod(ne[i]^(S_matrix[i,r]) for i in 1:nochemicals)
-
+		
+		
+		#Prebuilding and calculating the K's
+		K=zeros(noreactions,1)
+		
+		for r in 1:noreactions
+			K[r]=prod(ne[i]^(S_matrix[i,r]) for i in 1:nochemicals)
+		end		
