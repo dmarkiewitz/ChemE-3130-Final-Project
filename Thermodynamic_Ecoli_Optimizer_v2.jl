@@ -44,10 +44,10 @@ using Gurobi
 	for l in bad_rxn
 	global S_matrix
 		a,b=size(S_matrix)
-		S_matrix=hcat(S_matrix[:,1:(l-1)],S_matrix[:,(l+1):b])		
+		S_matrix=hcat(hcat(S_matrix[:,1:(l-1)],zeros(a,1)),S_matrix[:,(l+1):b])		
 	end
 
-
+	Volume=50*10^-3
 
 	nochemicals,noreactions=size(S_matrix)
 
@@ -88,7 +88,7 @@ using Gurobi
 	delta_G_not_compound=deltaG_list[:,2]
 
 	#prebuilding the delta_G_not_reaction vector
-	delta_G_not_reaction=zeros(nochemicals,1)
+	delta_G_not_reaction=zeros(noreactions,1)
 	
 	#Calculating and building delta G not of reaction array
 	for i in 1:noreactions
@@ -136,5 +136,5 @@ using Gurobi
 		K=zeros(noreactions,1)
 		
 		for r in 1:noreactions
-			K[r]=prod(ne[i]^(S_matrix[i,r]) for i in 1:nochemicals)
+			K[r]=prod((ne[i]/(Volume))^(S_matrix[i,r]) for i in 1:nochemicals)
 		end		
