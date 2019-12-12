@@ -32,6 +32,7 @@ reb=["C";"H";"N";"O";"P";"S"]#rows of elemental balance matrix
 rxns=Set{String}() # used to prevent duplicates
 creactants=Set{String}() #no used here but could be used for larger reaction networks
 exprxns=Set{String}() #used to preven duplicates
+exprxnsr=Set{String}()
 
 #h's are temporary vectors
 for i in 1:length(ec)
@@ -56,19 +57,21 @@ rxnv=collect(rxns)
 for j in 1:length(rxnv)
     global rxnv
     global exprxns
+    global exprxnsr
 
     h=rxnv[j]
     v=read(`curl -X GET http://rest.kegg.jp/get/reaction:$h/`, String)
     t=split(v,"\nEQUATION    ")[2]
     d=split(t,"\nRCLASS")[1]
     c=split(d,"\nCOMMENT")[1]
+    rxo=split(d,"\nCOMMENT")[1]*"@@[$j]"
     exprxns=union(exprxns,[c])
-
+    exprxnsr=union(exprxnsr,[rxo])
 end
 
 #vectorizing
 exprxnv=collect(exprxns)
-
+exprxnsrv=collect(exprxnsr)
 
 #adding on ex rxn givens
 #exprxnv=push!(exprxnv," -> C00169")
@@ -116,9 +119,10 @@ S_matrix=zeros(length(chemicals_raw),length(exprxnv))
 #processing of rxns into stoichometric matrix
 for j in 1:length(exprxnv)#length(rxns) #column j of matrix
     global S_matrix
-    global exprxnv
+    global exprxnsrv
     global chemicals_raw
-    bigsplit=split(exprxnv[j],r" -> | <=> ")#splits rxn into left and right half
+    bet=split(exprxnsrv[j],"@@")
+    bigsplit=split(bet[1],r" -> | <=> ")#splits rxn into left and right half
     left_rxn=bigsplit[1]
     left_chem_raw=split(left_rxn," + ")#subdivides the left half into chemicals and their coeffiecent
     left_chem_and_co=split.(left_chem_raw," ")#splits up chemicals and their coeffiecent
@@ -160,3 +164,21 @@ end
 S_matrix
 
 chemicals_raw
+
+r=zeros(length(exprxnsrv),1)
+for i in 1:length(r)
+	global exprxnsrv
+	Temp=split(exprxnsrv[i],"@@")
+	r[i]=parse(Int,Temp[2][2:length(Temp[2])-1])
+end
+
+jcol=[]
+for i in 1:length(r)
+	global rxnv
+	global r
+	global jcol
+	jcol=push!(jcol,rxnv[convert(Int,r[i])])
+end
+
+writedlm("Jcol.csv",jcol)
+writedlm("chemicals_raw.csv",chemicals_raw)

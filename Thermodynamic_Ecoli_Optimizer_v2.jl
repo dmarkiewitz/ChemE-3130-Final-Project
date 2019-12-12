@@ -28,17 +28,19 @@ using Gurobi
 	end
 	
 	#Storing indexes of bad reactions
-	bad_rxn=[]
+	bad_rxns=Set{Int}()
 
 	for j in bad_comp
-	global bad_rxn
+	global bad_rxns
 		for k in 1:noreactions
 			if abs(S_matrix[j,k])>0.5
-				bad_rxn=push!(bad_rxn,k)
+				bad_rxns=union(bad_rxns,k)
 			end		
 		end
 	end
 
+	bad_rxn=collect(bad_rxns)
+	
 	bad_rxn=sort(bad_rxn,rev=true)
 
 	for l in bad_rxn
@@ -75,7 +77,7 @@ using Gurobi
 
 	nochemicals,noreactions=size(S_matrix)
 
-	no=(1*50*10^-6)*ones(nochemicals,1)
+	no=(10*50*10^-6)*ones(nochemicals,1)
 	#.+0.0084
 	#no[30]=10
 	#no[288]=111
@@ -133,8 +135,14 @@ using Gurobi
 		
 		
 		#Prebuilding and calculating the K's
-		K=zeros(noreactions,1)
+		K=ones(noreactions,1)
 		
 		for r in 1:noreactions
-			K[r]=prod((ne[i]/(Volume))^(S_matrix[i,r]) for i in 1:nochemicals)
+			for i in 1:nochemicals
+				if S_matrix[i,r]!=0			
+					k=(ne[i]/(Volume))^(S_matrix[i,r])
+					K[r]=K[r]*k
+					println(" $i ")
+				end	
+			end
 		end		
