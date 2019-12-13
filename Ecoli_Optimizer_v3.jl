@@ -84,10 +84,4 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 
 	return DG, ne, error
 end
-#.+0.0084
-#n_mol_init[30]=10
-#nMol[288]=111
-#nMol[28]=0
-#nMol[287]=0
-#nMol[6]=10
-#nMol[16]=10 
+
