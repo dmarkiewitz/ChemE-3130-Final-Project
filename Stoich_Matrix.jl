@@ -1,12 +1,14 @@
 using LibCURL
 using DelimitedFiles
 
-#User input (need list of e.c's) put as column vector only the form "x.x.x.x" x's can
-#be more than one digit but the x's represent a number
-#results will not contrain exchange reactions those must be manuelly inputed
-#Example ec=["3.5.3.1";"2.1.3.3";"4.3.2.1";"6.3.4.5";"1.14.13.39"]
+#= 
+User input (need list of e.c's) put as column vector only the form "x.x.x.x" 
+x's can be more than one digit but the x's represent a number
+results will not contrain exchange reactions those must be manuelly inputed
+Example ec=["3.5.3.1";"2.1.3.3";"4.3.2.1";"6.3.4.5";"1.14.13.39"] 
+=#
 ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
-    "2.7.1.147";"5.1.3.3";"5.1.3.15";"5.3.1.9";"2.7.1.-";"3.2.1.86";"3.1.3.11"; #Weird hyphens supposed to be there?
+    "2.7.1.147";"5.1.3.3";"5.1.3.15";"5.3.1.9";"2.7.1.-";"3.2.1.86";"3.1.3.11"; 
     "2.7.1.11";"2.7.1.146";"2.7.1.90";"4.1.2.13";"5.3.1.1";"1.2.1.12";
     "1.2.1.59";"1.2.1.9";"1.2.7.6";"1.2.1.90";"5.4.2.4";"2.7.2.3";"5.4.2.11";
     "5.4.2.12";"3.1.3.80";"4.2.1.11";"2.7.1.40";"4.1.1.32";"4.1.1.49";"1.2.7.1";
@@ -23,16 +25,19 @@ ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
     "1.1.1.343";"2.7.1.203";"4.3.1.29";"4.1.2.43";"5.1.3.1";"5.3.1.6";
     "2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165"]
 
-#rxns will contain a list of the chemical reactions
-#creactants contains a list of chemical reactants in terms of
-#kegg nomincalature from which matrix EB short for elemental balence is
-#constructed and with the rows correctioning to the elements (can be expanded to entire periodic table if wanted)
-#but here it is [C;H;N;O;P;S], as for the columns they are ordered by the metabolites with row equal to column number
-
-reb=["C";"H";"N";"O";"P";"S"]#rows of elemental balance matrix
- #= creactants=Set{String}() #no used here but could be used for larger reaction networks =#
-
+""" 
+    Writes the reaction numbers categorized within the e.c. to a csv. 
+    
+    Parameters
+    -----------
+    None 
+    
+    Returns
+    ------------
+    None
+"""
 function parse_from_web() 
+  
     rxns=[] 
     for ec in ecs 
         # Get molecular data from website 
@@ -48,6 +53,18 @@ function parse_from_web()
     writedlm("Reaction.csv", rxns, "\n")
 end
 
+""" 
+    Writes the reaction expressions categorized by their reaction numbers 
+    to a csv. 
+    
+    Parameters
+    -----------
+    None 
+    
+    Returns
+    ------------
+    None
+"""
 function parse_rxn_exp()  
     exprxns=[] 
     # Removed Duplicate rxns (manual task because aliases)
@@ -59,21 +76,27 @@ function parse_rxn_exp()
         rem_comment=split(rem_rxn,"\nCOMMENT")[1]
         exprxns = append!(exprxns,[rem_comment])
     end
-    # Contains dupe messages
+    # Contains duped messages
     writedlm("ReactionExp.csv", exprxns, "\n")
 end
 
-#adding on ex rxn givens
-#exprxnv=push!(exprxnv," -> C00169")
-
-#adding on ex rxn to balance elements, Added after running the first tome
-#needed an ATP exchange rxn and an ADP exchange rxn to have a full elemental balance
-#assume this is an exchange required and a H20 export rxn. the none exchange rxns were already balenced
-# example exprxnv=push!(exprxnv,"C00001 -> ")
-
-
+""" 
+    Converts the reaction expressions to the respective Kegg chemical values and
+    coefficients.
+    
+    Parameters
+    -----------
+    None 
+    
+    Returns
+    ------------
+    all_reactants: Array-like
+        Reactant kegg values with their coefficients
+    all_products: Array-like
+        Product kegg values with their coefficients
+"""
 function parse_rxns() 
-    # Remove dupes messages manually
+    # Remove dupe messages manually
     all_reactants = []
     all_products = []
     exprxns = readdlm("ReactionExp_Rem_Dupe.csv", '\n', header=false)
@@ -91,6 +114,18 @@ function parse_rxns()
     return all_reactants,all_products
 end
 
+"""
+    Writes the unique list of kegg identifiers for the chemicals within all the 
+    reactions we analyzed to a csv.
+
+    Parameters
+    -----------
+    None
+
+    Returns
+    -----------
+    None
+"""
 function raw_chemicals() 
     reactants, products = parse_rxns()
     all_comp = append!(reactants, products)
@@ -99,6 +134,18 @@ function raw_chemicals()
     writedlm("raw_chemicals.csv", sort(unique!(all_chem)), '\n',)
 end
 
+"""
+    Constructs the reaction matrix for all the reactions we are analyzing
+    and writes it to a CSV
+    
+    Parameters
+    -----------
+    None
+
+    Returns
+    -----------
+    None
+"""
 function reaction_matrix()
     # Important rxn data 
     chemicals = readdlm("raw_chemicals.csv", '\n', header=false)
