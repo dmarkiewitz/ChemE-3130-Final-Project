@@ -95,11 +95,11 @@ end
     all_products: Array-like
         Product kegg values with their coefficients
 """
-function parse_rxns() 
+function parse_rxns(rxn_file) 
     # Remove dupe messages manually
     all_reactants = []
     all_products = []
-    exprxns = readdlm("ReactionExp_Rem_Dupe.csv", '\n', header=false)
+    exprxns = readdlm(rxn_file, '\n', header=false)
     for exprxn in exprxns 
         reactants, products = split(exprxn, r" -> | <=> ")   
         reactants, products = split(reactants, " + "), split(products, " + ")
@@ -126,14 +126,13 @@ end
     -----------
     None
 """
-function raw_chemicals() 
-    reactants, products = parse_rxns()
+function raw_chemicals(new_file,rxn_file) 
+    reactants, products = parse_rxns(rxn_file)
     all_comp = append!(reactants, products)
     flat_comp = collect(Iterators.flatten(all_comp))
     all_chem = [flat_comp[i][2] for i in 1:length(flat_comp)]
     unq_sort = sort(unique(all_chem))
-    writedlm("raw_chemicals.csv", unq_sort, '\n',)
-    return unq_sort
+    writedlm(new_file, unq_sort, '\n',)
 end
 
 """
@@ -148,16 +147,16 @@ end
     -----------
     None
 """
-function reaction_matrix()
+function reaction_matrix(chem_file,rxn_file,s_matrix_file)
     # Important rxn data 
-    chemicals = raw_chemicals()
-    reactants,products = parse_rxns() 
+    chemicals = readdlm(chem_file,'\n')
+    reactants,products = parse_rxns(rxn_file) 
     n_chemicals = length(chemicals)
     n_rxns = length(reactants)
 
     # Instantiate matrix = n_chemicals * n_rxns
     S = zeros(n_chemicals,n_rxns)
-
+    
     # S[i][j]
     for j in 1:n_rxns   # n_cols
         for i in 1:n_chemicals  # n_rows
@@ -187,5 +186,5 @@ function reaction_matrix()
             S[i,j] = stoich_coeff 
         end
     end
-    writedlm("s_matrix.csv",S,header=false)
+    writedlm(s_matrix_file,S,header=false)
 end
