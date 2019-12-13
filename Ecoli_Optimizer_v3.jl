@@ -33,6 +33,7 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	# Remove all rxns with missing data 
 	s_matrix = zero_cols_matrix(s_matrix,delG_data)
 
+	# Getting parameters 
 	n_chemicals,n_reactions = size(s_matrix)
 
 	# Number of Moles initially for optimizer arbritrary
@@ -43,8 +44,7 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	# Calculating deltaGrxn of all rxns in units of J/mol
 	conversion = 1000
 	delG_formation = [delG_data[i,2] for i in 1:n_chemicals] 
-	delG_rxn = [conversion*dot(Transpose(delG_formation),s_matrix[:,i]) 
-													 for i in 1:n_reactions]
+	delG_rxn = [conversion*dot(Transpose(delG_formation),s_matrix[:,i]) for i in 1:n_reactions]
 													
 	# Optimization 
 	EF_Model = Model(with_optimizer(Gurobi.Optimizer))
@@ -55,14 +55,13 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	# STP conditions 1 atm and 298.15K
 	R = 8.314 	# Units of J/(K*Mol)
 	TK = 298.15  # Units of K
-	summmation = sum(extent[i]*delG_rxn[i] for i=1:n_reactions)
+	summation = sum(extent[i]*delG_rxn[i] for i=1:n_reactions)
 	to_min_term = summation/(R*TK)
 	@objective(EF_Model, Min, to_min_term^2)
 
 	# number of moles can not go below 0! Possibly mole fraction criteria too?
 	for i in 1:n_chemicals
-		new_mols = n_mol_init[i] + sum(S_matrix[i,j]*extent[j] for j=1:n_reactions)
-		@constraint(EF_Model, new_mols >= 0) 
+		@constraint(EF_Model, n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j=1:n_reactions) >= 0) 
 	end 
 
 	optimize!(EF_Model)
@@ -72,11 +71,23 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	extent = JuMP.value.(extent[:])
 
 	#getting ne vector		
-	ne = [n_mol_init[i] + sum(S_matrix[i,j]*extent[j] for i in 1:n_chemicals)
-					for j=1:n_reactions]
+	ne = abs.([n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j in 1:n_reactions)
+					for i=1:n_chemicals])
+						
 		 
-	K = [prod((ne[i]/v_cell)^S_matrix[i,r] for i in 1:n_chemicals) 
+	K = [prod((ne[i]/v_cell)^s_matrix[i,r] for i in 1:n_chemicals) 
 			 for r in 1:n_reactions]
+	
+	DG=-TK*R*log.(K)./conversion
 
-	return K, ne
+	error=sum(extent[i]*delG_rxn[i] for i=1:n_reactions)/(R*TK)
+
+	return DG, ne, error
 end
+#.+0.0084
+#n_mol_init[30]=10
+#nMol[288]=111
+#nMol[28]=0
+#nMol[287]=0
+#nMol[6]=10
+#nMol[16]=10 
