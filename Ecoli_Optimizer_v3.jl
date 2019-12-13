@@ -72,9 +72,12 @@ function optimizer(v_cell,s_matrix,delG_data)
 		DG=-TK*R*log.(K)./conversion	
 		error=sum(extent[i]*delG_rxn[i] for i=1:n_reactions)/(R*TK)	
 
-		all_DG = append!(all_DG, DG)
-		all_ne = append!(all_ne, ne)
-		all_error = append!(all_error, error)
+		all_DG = append!(all_DG, [DG])
+		all_ne = append!(all_ne, [ne])
+		all_error = append!(all_error, [error])
+		writedlm("DG_conc_$conc", DG)
+		writedlm("ne_conc_$conc", ne)		
+		writedlm("error_conc_$conc",error)
 	end
 	return all_DG,all_ne,all_error
 end
