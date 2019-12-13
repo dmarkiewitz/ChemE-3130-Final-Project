@@ -138,5 +138,5 @@ function reaction_matrix()
             S[i,j] = stoich_coeff 
         end
     end
-    return S
+    writedlm("s_matrix.csv",S,header=false)
 end
