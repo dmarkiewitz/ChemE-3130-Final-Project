@@ -33,10 +33,11 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	# Remove all rxns with missing data 
 	s_matrix = zero_cols_matrix(s_matrix,delG_data)
 
+	n_chemicals,n_reactions = size(s_matrix)
+	
 	# Number of Moles initially for optimizer arbritrary
 	n_mol_init= conc*v_cell*ones(n_chemicals,1)
 
-	n_chemicals,n_reactions = size(s_matrix)
 	s_matrix = zero_cols_matrix(s_matrix, delG_data) 
 
 	# Calculating deltaGrxn of all rxns in units of J/mol
