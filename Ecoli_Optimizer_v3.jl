@@ -34,7 +34,7 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	s_matrix = zero_cols_matrix(s_matrix,delG_data)
 
 	n_chemicals,n_reactions = size(s_matrix)
-	
+
 	# Number of Moles initially for optimizer arbritrary
 	n_mol_init= conc*v_cell*ones(n_chemicals,1)
 
@@ -54,9 +54,9 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 
 	# STP conditions 1 atm and 298.15K
 	R = 8.314 	# Units of J/(K*Mol)
-	T = 298.15  # Units of K
+	TK = 298.15  # Units of K
 	summmation = sum(extent[i]*delG_rxn[i] for i=1:n_reactions)
-	to_min_term = summation/(R*T)
+	to_min_term = summation/(R*TK)
 	@objective(EF_Model, Min, to_min_term^2)
 
 	# number of moles can not go below 0! Possibly mole fraction criteria too?
@@ -74,18 +74,9 @@ function optimizer(conc, v_cell,s_matrix,delG_data)
 	#getting ne vector		
 	ne = [n_mol_init[i] + sum(S_matrix[i,j]*extent[j] for i in 1:n_chemicals)
 					for j=1:n_reactions]
-						
 		 
 	K = [prod((ne[i]/v_cell)^S_matrix[i,r] for i in 1:n_chemicals) 
 			 for r in 1:n_reactions]
 
 	return K, ne
-
 end
-#.+0.0084
-#n_mol_init[30]=10
-#nMol[288]=111
-#nMol[28]=0
-#nMol[287]=0
-#nMol[6]=10
-#nMol[16]=10 
