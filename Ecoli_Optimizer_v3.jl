@@ -29,59 +29,53 @@ end
 			 
 
 
-function optimizer(conc, v_cell,s_matrix,delG_data) 
-	# Remove all rxns with missing data 
-	s_matrix = zero_cols_matrix(s_matrix,delG_data)
+function optimizer(v_cell,s_matrix,delG_data) 
+	all_DG,all_ne,all_error = [],[],[]
+	for conc in [1,5,10]
+		# Remove all rxns with missing data 
+		s_matrix = zero_cols_matrix(s_matrix,delG_data)	
+		# Getting parameters 
+		n_chemicals,n_reactions = size(s_matrix)	
+		# Number of Moles initially for optimizer arbritrary
+		n_mol_init= conc*v_cell*ones(n_chemicals,1)	
+		s_matrix = zero_cols_matrix(s_matrix, delG_data) 	
+		# Calculating deltaGrxn of all rxns in units of J/mol
+		conversion = 1000
+		delG_formation = [delG_data[i,2] for i in 1:n_chemicals] 
+		delG_rxn = [conversion*dot(Transpose(delG_formation),s_matrix[:,i]) for i in 1:n_reactions]
 
-	# Getting parameters 
-	n_chemicals,n_reactions = size(s_matrix)
+		# Optimization 
+		EF_Model = Model(with_optimizer(Gurobi.Optimizer))	
+		@variable(EF_Model, extent[i=1:n_reactions])	
+		# STP conditions 1 atm and 298.15K
+		R = 8.314 	# Units of J/(K*Mol)
+		TK = 298.15  # Units of K
+		summation = sum(extent[i]*delG_rxn[i] for i=1:n_reactions)
+		to_min_term = summation/(R*TK)
+		@objective(EF_Model, Min, to_min_term^2)	
+		# number of moles can not go below 0! Possibly mole fraction criteria too?
+		for i in 1:n_chemicals
+			@constraint(EF_Model, n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j=1:n_reactions) >= 0) 
+		end 	
+		optimize!(EF_Model)
+		error = objective_value(EF_Model)	
+		# Building solution vector and matrix
+		extent = JuMP.value.(extent[:])	
+		#getting ne vector		
+		ne = abs.([n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j in 1:n_reactions)
+						for i=1:n_chemicals])
 
-	# Number of Moles initially for optimizer arbritrary
-	n_mol_init= conc*v_cell*ones(n_chemicals,1)
-
-	s_matrix = zero_cols_matrix(s_matrix, delG_data) 
-
-	# Calculating deltaGrxn of all rxns in units of J/mol
-	conversion = 1000
-	delG_formation = [delG_data[i,2] for i in 1:n_chemicals] 
-	delG_rxn = [conversion*dot(Transpose(delG_formation),s_matrix[:,i]) for i in 1:n_reactions]
-													
-	# Optimization 
-	EF_Model = Model(with_optimizer(Gurobi.Optimizer))
-
-	@variable(EF_Model, extent[i=1:n_reactions])
-
-
-	# STP conditions 1 atm and 298.15K
-	R = 8.314 	# Units of J/(K*Mol)
-	TK = 298.15  # Units of K
-	summation = sum(extent[i]*delG_rxn[i] for i=1:n_reactions)
-	to_min_term = summation/(R*TK)
-	@objective(EF_Model, Min, to_min_term^2)
-
-	# number of moles can not go below 0! Possibly mole fraction criteria too?
-	for i in 1:n_chemicals
-		@constraint(EF_Model, n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j=1:n_reactions) >= 0) 
-	end 
-
-	optimize!(EF_Model)
-	error = objective_value(EF_Model)
-
-	# Building solution vector and matrix
-	extent = JuMP.value.(extent[:])
-
-	#getting ne vector		
-	ne = abs.([n_mol_init[i] + sum(s_matrix[i,j]*extent[j] for j in 1:n_reactions)
-					for i=1:n_chemicals])
 						
-		 
-	K = [prod((ne[i]/v_cell)^s_matrix[i,r] for i in 1:n_chemicals) 
-			 for r in 1:n_reactions]
-	
-	DG=-TK*R*log.(K)./conversion
+		K = [prod((ne[i]/v_cell)^s_matrix[i,r] for i in 1:n_chemicals) 
+				 for r in 1:n_reactions]
+				
+		DG=-TK*R*log.(K)./conversion	
+		error=sum(extent[i]*delG_rxn[i] for i=1:n_reactions)/(R*TK)	
 
-	error=sum(extent[i]*delG_rxn[i] for i=1:n_reactions)/(R*TK)
-
-	return DG, ne, error
+		all_DG = append!(all_DG, DG)
+		all_ne = append!(all_ne, ne)
+		all_error = append!(all_error, error)
+	end
+	return all_DG,all_ne,all_error
 end
 
