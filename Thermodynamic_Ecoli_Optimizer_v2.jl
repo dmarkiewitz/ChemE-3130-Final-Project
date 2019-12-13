@@ -11,43 +11,25 @@ using Gurobi
 	#include("Stoichiometric_array_and_reference_vector_constructor.jl")
 
 	deltaG_list=CSV.read("Thermo_Delta_G_Data.csv")
-	aaa,bbb=size(deltaG_list)
-	deltaG_list=deltaG_list[1:aaa-2,:]
+	deltaG_list=sort(deltaG_list)
 
 	nochemicals,noreactions=size(S_matrix)
 
-	#storing indexes of chemicals whose reactions 
-	bad_comp=[]
-
+	#Removing chemicals reactions who engage in reactions that we dont have info about or are for a different part of the project
 	for i in 1:nochemicals
-	global bad_comp
-		if deltaG_list[i,2]>= 10^6
-			bad_comp=push!(bad_comp,i)
-		end
-
-	end
-	
-	#Storing indexes of bad reactions
-	bad_rxns=Set{Int}()
-
-	for j in bad_comp
-	global bad_rxns
-		for k in 1:noreactions
-			if abs(S_matrix[j,k])>0.5
-				bad_rxns=union(bad_rxns,k)
-			end		
-		end
-	end
-
-	bad_rxn=collect(bad_rxns)
-	
-	bad_rxn=sort(bad_rxn,rev=true)
-
-	for l in bad_rxn
 	global S_matrix
-		a,b=size(S_matrix)
-		S_matrix=hcat(hcat(S_matrix[:,1:(l-1)],zeros(a,1)),S_matrix[:,(l+1):b])		
+	global nochemicals
+	global noreactions
+		if deltaG_list[i,2]>= 10^6 || i==142 || i==224 || i==114 #The reaction that is included for the diol is the first i i.e i==142
+			for k in 1:noreactions
+				if abs(S_matrix[i,k])>0.5
+					S_matrix=hcat(hcat(S_matrix[:,1:(k-1)],zeros(nochemicals,1)),S_matrix[:,(k+1):noreactions])
+				end		
+			end
+		end
+
 	end
+	
 
 	Volume=50*10^-3
 
@@ -77,7 +59,7 @@ using Gurobi
 
 	nochemicals,noreactions=size(S_matrix)
 
-	no=(10*50*10^-6)*ones(nochemicals,1)
+	no=(1*50*10^-6)*ones(nochemicals,1)
 	#.+0.0084
 	#no[30]=10
 	#no[288]=111
@@ -137,12 +119,7 @@ using Gurobi
 		#Prebuilding and calculating the K's
 		K=ones(noreactions,1)
 		
-		for r in 1:noreactions
-			for i in 1:nochemicals
-				if S_matrix[i,r]!=0			
-					k=(ne[i]/(Volume))^(S_matrix[i,r])
-					K[r]=K[r]*k
-					println(" $i ")
-				end	
-			end
-		end		
+		for r in 1:noreactions		
+			k=prod((ne[i]/(Volume))^(S_matrix[i,r]) for i in 1:nochemicals)
+			K[r]=k	
+		end			

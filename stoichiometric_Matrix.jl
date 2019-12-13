@@ -19,7 +19,7 @@ ec=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63"
 "1.1.1.43";"2.7.1.12";"1.1.1.49";"1.1.1.363";"1.1.1.1388"
 ;"5.3.1.27";"2.2.1.1";"2.2.1.2";"4.1.2.9";"4.1.2.4";"2.7.1.15";"5.4.2.7";"4.2.1.39";"4.2.1.40";"4.3.1.9";"4.1.2.55";
 "4.1.2.51";"2.7.1.45";"2.7.1.178";"3.1.1.31"
-;"4.2.1.12";"1.1.1.44";"1.1.1.343";"2.7.1.203";"4.3.1.29";"4.1.2.43";"5.1.3.1";"5.3.1.6";"2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165"]
+;"4.2.1.12";"1.1.1.44";"1.1.1.343";"2.7.1.203";"4.3.1.29";"4.1.2.43";"5.1.3.1";"5.3.1.6";"2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165";"1.1.1.202";"4.2.1.30"]
 
 
 rxns=[] #rxns are the reaction ID'short
@@ -46,6 +46,8 @@ end
 
 #rxns has duplicate reactions, this will remove those duplicates
 rxns=union(rxns)
+
+rxns=sort(rxns)
 
 for j in 1:length(rxns)
     global rxns
@@ -90,29 +92,32 @@ for i in 1:length(exprxns) #length(rxns) #column i of matrix
     end
 end
 
+#organizing our chemicals so we can read the matrix quickly
+chemical_sort=sort(chemicals_raw)
+
 #building S_matrix
 
-S_matrix=zeros(length(chemicals_raw),length(exprxns))
+S_matrix=zeros(length(chemical_sort),length(exprxns))
 
 #processing of rxns into stoichometric matrix
 for j in 1:length(exprxns)#length(rxns) #column j of matrix
     global S_matrix
     global exprxns
-    global chemicals_raw
+    global chemical_sort
     bigsplit=split(exprxns[j],r" -> | <=> ")#splits rxn into left and right half
     left_rxn=bigsplit[1]
     left_chem_raw=split(left_rxn," + ")#subdivides the left half into chemicals and their coeffiecent
     left_chem_and_co=split.(left_chem_raw," ")#splits up chemicals and their coeffiecent
     for k in 1:length(left_chem_and_co)#Places coeffiecents in s_matrix and since its the left side the entries recieve an negative sign
         if length(left_chem_and_co[k])==2 && left_chem_and_co[k][2]!=""#grabs coeffiecent of chemicals if present
-            for i in 1:length(chemicals_raw) #possible row number
-                if occursin(left_chem_and_co[k][2],chemicals_raw[i])#finds correct row number
+            for i in 1:length(chemical_sort) #possible row number
+                if occursin(left_chem_and_co[k][2],chemical_sort[i])#finds correct row number
                     S_matrix[i,j]=-1*parse(Int,left_chem_and_co[k][1])
                 end
             end
         elseif length(left_chem_and_co[k])==1 && left_chem_and_co[k][1]!=""#grabs present chemicals and assigns -1 to their S_matrix possition
-            for i in 1:length(chemicals_raw) #possible row number
-                if occursin(left_chem_and_co[k][1],chemicals_raw[i])#finds correct row number
+            for i in 1:length(chemical_sort) #possible row number
+                if occursin(left_chem_and_co[k][1],chemical_sort[i])#finds correct row number
                     S_matrix[i,j]=-1
                 end
             end
@@ -123,14 +128,14 @@ for j in 1:length(exprxns)#length(rxns) #column j of matrix
     right_chem_and_co=split.(right_chem_raw)#splits up chemicals and their coeffiecent
     for k in 1:length(right_chem_and_co)
         if length(right_chem_and_co[k])==2 && !(right_chem_and_co[k][2]=="")#grabs coeffiecent of chemicals if present
-            for i in 1:length(chemicals_raw) #possible row number
-                if occursin(right_chem_and_co[k][2],chemicals_raw[i])#finds correct row number
+            for i in 1:length(chemical_sort) #possible row number
+                if occursin(right_chem_and_co[k][2],chemical_sort[i])#finds correct row number
                     S_matrix[i,j]=parse(Int,right_chem_and_co[k][1])
                 end
             end
         elseif length(right_chem_and_co[k])==1 && right_chem_and_co[k][1]!=""#grabs present chemicals and assigns 1 to their S_matrix position
-            for i in 1:length(chemicals_raw) #possible row number
-                if occursin(right_chem_and_co[k][1],chemicals_raw[i])#finds correct row number
+            for i in 1:length(chemical_sort) #possible row number
+                if occursin(right_chem_and_co[k][1],chemical_sort[i])#finds correct row number
                     S_matrix[i,j]=1
                 end
             end
