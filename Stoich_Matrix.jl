@@ -23,7 +23,8 @@ ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
     "4.1.2.4";"2.7.1.15";"5.4.2.7";"4.2.1.39";"4.2.1.40";"4.3.1.9";"4.1.2.55";
     "4.1.2.51";"2.7.1.45";"2.7.1.178";"3.1.1.31";"4.2.1.12";"1.1.1.44";
     "1.1.1.343";"2.7.1.203";"4.3.1.29";"4.1.2.43";"5.1.3.1";"5.3.1.6";
-    "2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165"]
+    "2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165";
+    "4.2.1.30";"1.1.1.202"]
 
 """ 
     Writes the reaction numbers categorized within the e.c. to a csv. 
@@ -37,7 +38,6 @@ ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
     None
 """
 function parse_from_web() 
-  
     rxns=[] 
     for ec in ecs 
         # Get molecular data from website 
@@ -111,7 +111,7 @@ function parse_rxns()
         all_reactants = append!(all_reactants,[split.(reactants, " ")])
         all_products = append!(all_products,[split.(products, " ")])
     end 
-    return all_reactants,all_products
+    return all_reactants, all_products
 end
 
 """
@@ -131,7 +131,9 @@ function raw_chemicals()
     all_comp = append!(reactants, products)
     flat_comp = collect(Iterators.flatten(all_comp))
     all_chem = [flat_comp[i][2] for i in 1:length(flat_comp)]
-    writedlm("raw_chemicals.csv", sort(unique!(all_chem)), '\n',)
+    unq_sort = sort(unique(all_chem))
+    writedlm("raw_chemicals.csv", unq_sort, '\n',)
+    return unq_sort
 end
 
 """
@@ -148,7 +150,7 @@ end
 """
 function reaction_matrix()
     # Important rxn data 
-    chemicals = readdlm("raw_chemicals.csv", '\n', header=false)
+    chemicals = raw_chemicals()
     reactants,products = parse_rxns() 
     n_chemicals = length(chemicals)
     n_rxns = length(reactants)

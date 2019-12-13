@@ -10,7 +10,7 @@ using Gurobi
 	
 	#include("Stoichiometric_array_and_reference_vector_constructor.jl")
 
-	deltaG_list=CSV.read("Thermo_Delta_G_Data.csv")
+	deltaG_list=CSV.read("Delta_G_Data.csv")
 	aaa,bbb=size(deltaG_list)
 	deltaG_list=deltaG_list[1:aaa-2,:]
 

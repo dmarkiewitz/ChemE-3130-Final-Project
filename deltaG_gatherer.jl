@@ -1,9 +1,9 @@
 using DelimitedFiles
 
-function Therm_Integration(chemicals_raw)
+function Therm_Integration()
 	#obtaining delta g information in kj/mol
 	eqinfo=readdlm("kegg_compounds_Alberty_ph6.5.csv")
-
+	chemicals_raw = readdlm("raw_chemicals.csv", '\n', header = false)
 
 	#intializing storgage arrays
 	DGMF=[]
