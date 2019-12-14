@@ -31,7 +31,7 @@ end
 
 function optimizer(v_cell,s_matrix,delG_data) 
 	all_DG,all_ne,all_error = [],[],[]
-	for conc in [1,5,10]
+	for conc in [1*10^-3,5*10^-3,10*10^-3]
 		# Remove all rxns with missing data 
 		s_matrix = zero_cols_matrix(s_matrix,delG_data)	
 		# Getting parameters 
@@ -75,9 +75,9 @@ function optimizer(v_cell,s_matrix,delG_data)
 		all_DG = append!(all_DG, [DG])
 		all_ne = append!(all_ne, [ne])
 		all_error = append!(all_error, [error])
-		writedlm("DG_conc_$conc", DG)
-		writedlm("ne_conc_$conc", ne)		
-		writedlm("error_conc_$conc",error)
+		writedlm("DG_conc_no_alc_$conc", DG)
+		writedlm("ne_conc_no_alc_$conc", ne)		
+		writedlm("error_conc_no_alc_$conc",error)
 	end
 	return all_DG,all_ne,all_error
 end
