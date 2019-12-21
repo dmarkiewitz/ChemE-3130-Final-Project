@@ -3,6 +3,7 @@ using DelimitedFiles
 using DataFrames
 using CSV
 using Gurobi
+using LinearAlgebra
  
 
 # Get S_matrix and delta Gs precomputed and processed
