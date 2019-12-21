@@ -1,4 +1,4 @@
-Packages to install:
+##**Packages to install:**
 Gurobi, CSV, DataFrames, DelimitedFiles, JuMP, LibCURL
 
 Type 'include("Stoich_Matrix.jl")' to see how the stoichiometric matrix for the reactions were generated
