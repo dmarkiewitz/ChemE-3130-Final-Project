@@ -1,9 +1,9 @@
 **Packages to install:**
 Gurobi, CSV, DataFrames, DelimitedFiles, JuMP, LibCURL, LinearAlgebra
 
-**1)**Type 'include("Stoich_Matrix.jl")' to see how the stoichiometric matrix for the reactions were generated
+**1)** Type 'include("Stoich_Matrix.jl")' to see how the stoichiometric matrix for the reactions were generated
 
-**2)**Type 'include("Ecoli_Optimizer_v3.jl")' to see the data returned from the
+**2)** Type 'include("Ecoli_Optimizer_v3.jl")' to see the data returned from the
 optimizer. 
 
 **For 2:**
