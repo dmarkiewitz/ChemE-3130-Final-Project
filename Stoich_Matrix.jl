@@ -1,32 +1,10 @@
 using LibCURL
 using DelimitedFiles
 
-#= 
-User input (need list of e.c's) put as column vector only the form "x.x.x.x" 
-x's can be more than one digit but the x's represent a number
-results will not contrain exchange reactions those must be manuelly inputed
-Example ec=["3.5.3.1";"2.1.3.3";"4.3.2.1";"6.3.4.5";"1.14.13.39"] 
-=#
-ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
-    "2.7.1.147";"5.1.3.3";"5.1.3.15";"5.3.1.9";"2.7.1.-";"3.2.1.86";"3.1.3.11"; 
-    "2.7.1.11";"2.7.1.146";"2.7.1.90";"4.1.2.13";"5.3.1.1";"1.2.1.12";
-    "1.2.1.59";"1.2.1.9";"1.2.7.6";"1.2.1.90";"5.4.2.4";"2.7.2.3";"5.4.2.11";
-    "5.4.2.12";"3.1.3.80";"4.2.1.11";"2.7.1.40";"4.1.1.32";"4.1.1.49";"1.2.7.1";
-    "1.2.7.11";"1.1.1.27";"1.2.4.1";"2.3.1.12";"1.1.1.1";"1.1.2.7";"1.1.1.2";
-    "1.1.5.5";"1.1.2.8";"6.2.1.1";"6.2.1.13";"1.8.1.4";"1.2.1.3";"1.2.1.5";
-    "1.2.1.-";"6.4.1.1";"4.2.1.3";"1.1.1.42";"1.1.1.41";"1.1.1.286";"1.2.4.2";
-    "2.3.1.61";"2.3.3.3";"2.3.3.8";"2.3.3.1";"1.2.7.3";"1.1.1.37";"1.1.5.4";
-    "4.2.1.2";"1.3.5.4";"1.3.5.1";"6.2.1.4";"6.2.1.5";"2.8.3.18";"1.1.1.47";
-    "1.1.3.4";"1.1.3.5";"3.1.1.17";"1.1.1.360";"1.1.1.359";"1.1.5.9";"1.1.5.2";
-    "1.1.99.3";"1.1.1.215";"2.7.1.13";"1.1.1.43";"2.7.1.12";"1.1.1.49";
-    "1.1.1.363";"1.1.1.1388";"5.3.1.27";"2.2.1.1";"2.2.1.2";"4.1.2.9";
-    "4.1.2.4";"2.7.1.15";"5.4.2.7";"4.2.1.39";"4.2.1.40";"4.3.1.9";"4.1.2.55";
-    "4.1.2.51";"2.7.1.45";"2.7.1.178";"3.1.1.31";"4.2.1.12";"1.1.1.44";
-    "1.1.1.343";"2.7.1.203";"4.3.1.29";"4.1.2.43";"5.1.3.1";"5.3.1.6";
-    "2.7.6.1";"2.7.4.23";"4.1.2.14";"1.2.99.8";"1.2.1.89";"1.2.7.5";"2.7.1.165";
-    "4.2.1.30";"1.1.1.202"]
+#= Develop the stoich matrix for our reaction network =#
 
-""" 
+function parse_from_web() 
+    """ 
     Writes the reaction numbers categorized within the e.c. to a csv. 
     
     Parameters
@@ -36,24 +14,33 @@ ecs=["3.1.3.10";"5.4.2.2";"2.7.1.199";"3.1.3.9";"2.7.1.1";"2.7.1.2";"2.7.1.63";
     Returns
     ------------
     None
-"""
-function parse_from_web() 
+
+    """
+    #= 
+    User input (need list of e.c's) put as vector only the form "x.x.x.x" 
+    x's can be more than one digit but the x's represent a number.
+    Results will not contrain exchange reactions those must be manually inputed
+    Example: ecs = ["3.5.3.1";"2.1.3.3";"4.3.2.1";"6.3.4.5";"1.14.13.39"] 
+    =#
+    ecs = readdlm("ec.csv")
     rxns=[] 
     for ec in ecs 
         # Get molecular data from website 
         data =read(`curl -X GET http://rest.kegg.jp/link/rn/$ec/`, String) 
+
+        # Parse data to get reaction number of the form of R$$$$$ where $ are ints
         rem_newline = split.(data,"\n")
         rem_tab = split.(rem_newline,"\t")
-        rem_empty = filter(x -> x != [""],rem_tab)
-        rem_rn = map(x -> SubString(x[2],4),rem_empty)
-        # Remove possible duplicate numeraically classified reactions
-        rxns = union(rxns,rem_rn)
+        rem_empty = filter(x -> x != [""],rem_tab)  # Filter empty web results
+        rem_rn = map(x -> SubString(x[2],4),rem_empty) # Get the reaction
+        rxns = union(rxns,rem_rn)                   # Could just be append 
     end 
-    # Contains duplicates
+    # Contains duplicate reactions that have different reaction numbers 
     writedlm("Reaction.csv", rxns, "\n")
 end
 
-""" 
+function parse_rxn_exp()  
+    """ 
     Writes the reaction expressions categorized by their reaction numbers 
     to a csv. 
     
@@ -64,43 +51,49 @@ end
     Returns
     ------------
     None
-"""
-function parse_rxn_exp()  
+    
+    """
     exprxns=[] 
-    # Removed Duplicate rxns (manual task because aliases)
+    # Removed rxns classified as duplicates (manual task because only a few)
     rxns = readdlm("Reaction_Rem_Dupe.csv",'\n',header=false)
     for rxn in rxns
+        # Get the reaction expression from Kegg
         data=read(`curl -X GET http://rest.kegg.jp/get/reaction:$rxn/`, String)
+
+        # Parse out the reaction expression
         split_eq=split(data,"\nEQUATION    ")[2]
         rem_rxn=split(split_eq,"\nRCLASS")[1]
         rem_comment=split(rem_rxn,"\nCOMMENT")[1]
         exprxns = append!(exprxns,[rem_comment])
     end
-    # Contains duped messages
+    # Contains messages about duplicate reaction numbers
     writedlm("ReactionExp.csv", exprxns, "\n")
 end
 
-""" 
+function parse_rxns(rxn_file) 
+    
+    """ 
     Converts the reaction expressions to the respective Kegg chemical values and
     coefficients.
-    
+
     Parameters
     -----------
     None 
-    
+
     Returns
     ------------
     all_reactants: Array-like
         Reactant kegg values with their coefficients
     all_products: Array-like
         Product kegg values with their coefficients
-"""
-function parse_rxns(rxn_file) 
+
+    """
     # Remove dupe messages manually
     all_reactants = []
     all_products = []
     exprxns = readdlm(rxn_file, '\n', header=false)
     for exprxn in exprxns 
+        # Split reactants and products to two arrays
         reactants, products = split(exprxn, r" -> | <=> ")   
         reactants, products = split(reactants, " + "), split(products, " + ")
 
@@ -114,7 +107,8 @@ function parse_rxns(rxn_file)
     return all_reactants, all_products
 end
 
-"""
+function raw_chemicals(new_file,rxn_file) 
+    """
     Writes the unique list of kegg identifiers for the chemicals within all the 
     reactions we analyzed to a csv.
 
@@ -125,8 +119,9 @@ end
     Returns
     -----------
     None
-"""
-function raw_chemicals(new_file,rxn_file) 
+
+    """
+    # Implement unique sort
     reactants, products = parse_rxns(rxn_file)
     all_comp = append!(reactants, products)
     flat_comp = collect(Iterators.flatten(all_comp))
@@ -135,7 +130,9 @@ function raw_chemicals(new_file,rxn_file)
     writedlm(new_file, unq_sort, '\n',)
 end
 
-"""
+
+function reaction_matrix(chem_file,rxn_file,s_matrix_file)
+    """
     Constructs the reaction matrix for all the reactions we are analyzing
     and writes it to a CSV
     
@@ -146,8 +143,8 @@ end
     Returns
     -----------
     None
-"""
-function reaction_matrix(chem_file,rxn_file,s_matrix_file)
+
+    """
     # Important rxn data 
     chemicals = readdlm(chem_file,'\n')
     reactants,products = parse_rxns(rxn_file) 
@@ -158,15 +155,16 @@ function reaction_matrix(chem_file,rxn_file,s_matrix_file)
     S = zeros(n_chemicals,n_rxns)
     
     # S[i][j]
-    for j in 1:n_rxns   # n_cols
+    for j in 1:n_rxns    # n_cols
         for i in 1:n_chemicals  # n_rows
+           # Find the stoich coeff of the ith chemical within the matrix  
             stoich_coeff = 0 
             num_prod = length(products[j])
             num_reac = length(reactants[j]) 
             chemical = chemicals[i]
             for k in 1:num_prod                      # Products of jth rxn 
-                product = products[j][k]              
-                product_co = product[1]
+                product = products[j][k]             # kth product in jth rxn
+                product_co = product[1]              # Product coefficient
 
                 # Update stoich coeff for the chemical in reaction j
                 if chemical in product
@@ -188,3 +186,15 @@ function reaction_matrix(chem_file,rxn_file,s_matrix_file)
     end
     writedlm(s_matrix_file,S,header=false)
 end
+
+# What we called to develop the two S matrices #
+
+# No alcohol compounds of interest 
+reaction_matrix("raw_chemicals_NoAlc.csv",
+                "ReactionExp_Rem_Dupe_NoAlc.csv",
+                "s_matrix_NoAlc.csv")
+
+# Contains alcohol compounds of interest
+reaction_matrix("raw_chemicals.csv",
+                "ReactionExp_Rem_Dupe.csv",
+                "s_matrix.csv")
